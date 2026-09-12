@@ -1,0 +1,2356 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Инвентарь">
+    <meta name="theme-color" content="#F9F9F9" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+    <title>Инвентаризация</title>
+    <style>
+        :root {
+            --ios-blue: #007AFF;
+            --ios-red: #FF3B30;
+            --ios-green: #34C759;
+            --ios-orange: #FF9500;
+            --ios-gray: #8E8E93;
+            --ios-gray2: #C7C7CC;
+            --ios-gray3: #E5E5EA;
+            --ios-bg: #F2F2F7;
+            --ios-card: #FFFFFF;
+            --ios-label: #000000;
+            --ios-label2: #3C3C43;
+            --ios-separator: rgba(60,60,67,0.29);
+            --nav-bg: rgba(249,249,249,0.94);
+            --chip-bg: rgba(120,120,128,0.12);
+            color-scheme: light;
+        }
+
+        /* тёмная тема: чёрный фон гасит пиксели на OLED-экранах.
+           По умолчанию берём настройку системы, выбор пользователя её перекрывает. */
+        @media (prefers-color-scheme: dark) {
+            :root:not([data-theme="light"]) {
+                --ios-blue: #0A84FF;
+                --ios-red: #FF453A;
+                --ios-green: #30D158;
+            --ios-orange: #FF9F0A;
+                --ios-orange: #FF9F0A;
+                --ios-gray: #98989F;
+                --ios-gray2: #5A5A5F;
+                --ios-gray3: #2C2C2E;
+                --ios-bg: #000000;
+                --ios-card: #1C1C1E;
+                --ios-label: #FFFFFF;
+                --ios-label2: #EBEBF5;
+                --ios-separator: rgba(84,84,88,0.65);
+                --nav-bg: rgba(20,20,22,0.92);
+                --chip-bg: rgba(120,120,128,0.26);
+                color-scheme: dark;
+            }
+        }
+
+        /* выбор пользователя перекрывает системную настройку */
+        :root[data-theme="dark"] {
+            --ios-blue: #0A84FF;
+            --ios-red: #FF453A;
+            --ios-green: #30D158;
+            --ios-orange: #FF9F0A;
+            --ios-gray: #98989F;
+            --ios-gray2: #5A5A5F;
+            --ios-gray3: #2C2C2E;
+            --ios-bg: #000000;
+            --ios-card: #1C1C1E;
+            --ios-label: #FFFFFF;
+            --ios-label2: #EBEBF5;
+            --ios-separator: rgba(84,84,88,0.65);
+            --nav-bg: rgba(20,20,22,0.92);
+            --chip-bg: rgba(120,120,128,0.26);
+            color-scheme: dark;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+            background: var(--ios-bg);
+            color: var(--ios-label);
+            font-size: 17px;
+            line-height: 1.35;
+            padding-bottom: 40px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .nav-bar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: var(--nav-bg);
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: 0.5px solid var(--ios-separator);
+            padding: 12px 16px calc(12px);
+            padding-top: calc(12px + env(safe-area-inset-top, 0px));
+        }
+
+        .sync {
+            display:flex; align-items:center; gap:7px;
+            margin-top:10px; padding:0; border:none; background:none;
+            font-family:inherit; font-size:13px; font-weight:500;
+            color:var(--ios-gray); cursor:pointer;
+        }
+        .sync.pending { color:var(--ios-orange, #FF9500); }
+        .sync.ok { color:var(--ios-green); }
+        .sync-dot { width:7px; height:7px; border-radius:50%; background:currentColor; }
+
+        .chips {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chip {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+            padding: 9px 14px;
+            border: none;
+            border-radius: 12px;
+            background: var(--chip-bg);
+            font-family: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .chip:active { opacity: 0.55; }
+
+        .chip-label {
+            font-size: 11px;
+            color: var(--ios-gray);
+            letter-spacing: 0.02em;
+        }
+
+        .chip-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--ios-label);
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .content {
+            padding: 4px 16px 0;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--ios-card);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 16px;
+        }
+
+        .row {
+            display: flex;
+            align-items: center;
+            min-height: 44px;
+            padding: 11px 16px;
+            position: relative;
+        }
+
+        .row + .row::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 16px;
+            right: 0;
+            height: 0.5px;
+            background: var(--ios-separator);
+        }
+
+        .row label {
+            flex: 0 1 auto;
+            font-size: 17px;
+            color: var(--ios-label);
+            white-space: nowrap;
+            margin-right: 14px;
+        }
+
+        .row input,
+        .row textarea {
+            flex: 1 1 auto;
+            min-width: 0;           /* иначе длинное слово растягивает поле за край */
+            border: none;
+            outline: none;
+            font-family: inherit;
+            font-size: 17px;
+            color: var(--ios-label);
+            background: transparent;
+            text-align: right;
+            padding: 0;
+        }
+
+        .row textarea {
+            text-align: left;
+            resize: none;
+            min-height: 38px;
+            padding-top: 2px;
+        }
+
+        .row.stacked {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .row.stacked label {
+            flex: none;
+            margin-right: 0;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: var(--ios-gray);
+        }
+
+        .segmented {
+            display: flex;
+            gap: 6px;
+            background: var(--ios-gray3);
+            border-radius: 9px;
+            padding: 3px;
+        }
+
+        .segmented button {
+            flex: 1;
+            min-width: 0;
+            padding: 9px 4px;
+            border: none;
+            border-radius: 7px;
+            background: transparent;
+            font-family: inherit;
+            font-size: 13px;
+            line-height: 1.2;
+            color: var(--ios-label2);
+            cursor: pointer;
+        }
+
+        .segmented button.on {
+            background: var(--ios-card);
+            color: var(--ios-label);
+            font-weight: 600;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.14);
+        }
+
+        .segmented button:active { opacity: 0.6; }
+
+        input::placeholder,
+        textarea::placeholder {
+            color: var(--ios-gray2);
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            min-height: 50px;
+            border: none;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+
+        .btn:active { opacity: 0.6; }
+
+        .btn-filled {
+            background: var(--ios-blue);
+            color: #fff;
+        }
+
+        .btn-tinted {
+            background: rgba(0,122,255,0.1);
+            color: var(--ios-blue);
+        }
+
+        .btn-plain {
+            background: transparent;
+            color: var(--ios-blue);
+            font-weight: 400;
+        }
+
+        .btn-destructive {
+            background: transparent;
+            color: var(--ios-red);
+            font-weight: 400;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            scroll-margin-bottom: 24px;
+        }
+
+        /* Фото */
+        .photo-area {
+            padding: 16px;
+        }
+
+        .photo-strip {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .photo-thumb {
+            position: relative;
+            width: 78px;
+            height: 78px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: var(--ios-gray3);
+        }
+
+        .photo-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .photo-thumb .remove {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(0,0,0,0.55);
+            color: #fff;
+            font-size: 15px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .photo-empty {
+            width: 78px;
+            height: 78px;
+            padding: 0;
+            border-radius: 10px;
+            border: 1.5px dashed var(--ios-gray2);
+            background: transparent;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--ios-blue);
+            font-size: 30px;
+            font-weight: 300;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .photo-empty:active { background: rgba(0,122,255,0.08); }
+
+        /* Список товаров */
+        .item-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            position: relative;
+        }
+
+        .item-row + .item-row::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 16px;
+            right: 0;
+            height: 0.5px;
+            background: var(--ios-separator);
+        }
+
+        .item-photos {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .item-photos img {
+            width: 52px;
+            height: 52px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .item-nophoto {
+            width: 52px;
+            height: 52px;
+            border-radius: 8px;
+            background: var(--ios-gray3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--ios-gray);
+        }
+
+        .item-nophoto svg {
+            width: 24px;
+            height: 24px;
+            display: block;
+        }
+
+        .item-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .wait-dot {
+            display:inline-block; width:7px; height:7px; border-radius:50%;
+            background:var(--ios-orange); margin-right:7px; vertical-align:middle;
+        }
+
+        .item-name {
+            font-size: 17px;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .item-meta {
+            font-size: 15px;
+            color: var(--ios-gray);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 1px;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .icon-btn {
+            width: 44px;
+            height: 44px;
+            border: none;
+            border-radius: 10px;
+            background: var(--ios-bg);
+            color: var(--ios-blue);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .icon-btn svg {
+            width: 22px;
+            height: 22px;
+            display: block;
+        }
+
+        .icon-btn.destructive { color: var(--ios-red); }
+
+        .icon-btn:active { opacity: 0.5; }
+
+        .empty {
+            background: var(--ios-card);
+            border-radius: 10px;
+            padding: 44px 20px;
+            text-align: center;
+            color: var(--ios-gray);
+            font-size: 15px;
+        }
+
+        #tableSection {
+            margin-top: 28px;
+        }
+
+        .list-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 16px 0;
+        }
+
+        .footer-note {
+            font-size: 13px;
+            color: var(--ios-gray);
+        }
+
+        .clear-btn {
+            border: none;
+            background: none;
+            padding: 4px 0;
+            font-family: inherit;
+            font-size: 13px;
+            color: var(--ios-blue);
+            cursor: pointer;
+        }
+
+        .clear-btn:active { opacity: 0.5; }
+
+        /* настройки */
+        .sheet {
+            display:none; position:fixed; inset:0; z-index:200;
+            background:var(--ios-bg); overflow-y:auto; -webkit-overflow-scrolling:touch;
+        }
+        .sheet.open { display:block; }
+        .sheet-nav {
+            position:sticky; top:0; z-index:10; display:flex; align-items:center;
+            justify-content:space-between; gap:12px; padding:12px 16px;
+            padding-top:calc(12px + env(safe-area-inset-top,0px));
+            background:var(--nav-bg);
+            backdrop-filter:saturate(180%) blur(20px);
+            -webkit-backdrop-filter:saturate(180%) blur(20px);
+            border-bottom:.5px solid var(--ios-separator);
+        }
+        .sheet-nav button {
+            border:none; background:none; font-family:inherit; font-size:17px;
+            color:var(--ios-blue); cursor:pointer; padding:4px 0; font-weight:600;
+        }
+        .sheet-nav .title { flex:1; text-align:center; font-size:16px; font-weight:600; }
+        .sheet-body { padding:16px 16px 60px; max-width:700px; margin:0 auto; }
+
+        .set-group { margin-top:22px; }
+        .set-group:first-child { margin-top:4px; }
+        .set-title {
+            font-size:12px; font-weight:600; letter-spacing:.6px; text-transform:uppercase;
+            color:var(--ios-gray); padding:0 4px 8px;
+        }
+        .set-note { font-size:13px; color:var(--ios-gray); padding:8px 4px 0; line-height:1.45; }
+        .set-card { background:var(--ios-card); border-radius:10px; overflow:hidden; }
+
+        .set-row {
+            display:flex; align-items:center; gap:12px; padding:12px 14px;
+            position:relative; min-height:48px;
+        }
+        .set-row + .set-row::before {
+            content:''; position:absolute; top:0; left:14px; right:0;
+            height:.5px; background:var(--ios-separator);
+        }
+        .set-row .k { flex:0 0 auto; font-size:15px; color:var(--ios-label); }
+        .set-row .v {
+            flex:1; min-width:0; text-align:right; font-size:15px; color:var(--ios-gray);
+            white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+        }
+        button.set-row, a.set-row {
+            width:100%; border:none; background:none; font-family:inherit;
+            text-align:left; cursor:pointer; text-decoration:none;
+        }
+        button.set-row:active, a.set-row:active { background:var(--chip-bg); }
+        a.set-row .k { color:var(--ios-blue); }
+        .set-row.danger .k { color:var(--ios-red); }
+        .set-row .chev { flex:0 0 auto; color:var(--ios-gray2); font-size:17px; }
+
+        .set-row.stacked { flex-direction:column; align-items:stretch; gap:8px; }
+        .set-row.stacked .k { font-size:13px; color:var(--ios-gray); }
+        .set-row input.url {
+            width:100%; border:none; outline:none; background:var(--chip-bg);
+            border-radius:9px; padding:11px 12px;
+            font-family:ui-monospace, monospace; font-size:13px; color:var(--ios-label);
+        }
+
+        .gate {
+            display:none; position:fixed; inset:0; z-index:500;
+            background:var(--ios-bg); overflow-y:auto;
+            padding:calc(40px + env(safe-area-inset-top,0px)) 24px 40px;
+        }
+        .gate.open { display:block; }
+        .gate-box { max-width:460px; margin:0 auto; }
+        .gate-icon {
+            width:54px; height:54px; border-radius:14px; background:var(--chip-bg);
+            color:var(--ios-blue); display:flex; align-items:center; justify-content:center;
+            margin-bottom:22px;
+        }
+        .gate-icon svg { width:28px; height:28px; display:block; }
+        .gate h2 { font-size:26px; font-weight:700; letter-spacing:-.4px; line-height:1.2; }
+        .gate p { margin-top:14px; font-size:16px; color:var(--ios-gray); line-height:1.5; }
+        .gate-steps {
+            margin:22px 0 0; padding:0; list-style:none;
+            background:var(--ios-card); border-radius:10px; overflow:hidden;
+            counter-reset:g;
+        }
+        .gate-steps li {
+            display:flex; gap:12px; align-items:flex-start;
+            padding:14px; font-size:16px; position:relative;
+        }
+        .gate-steps li + li::before {
+            content:''; position:absolute; top:0; left:14px; right:0;
+            height:.5px; background:var(--ios-separator);
+        }
+        .gate-steps li::after {
+            counter-increment:g; content:counter(g);
+            order:-1; flex:0 0 auto; width:24px; height:24px; border-radius:50%;
+            background:var(--ios-blue); color:#fff; font-size:13px; font-weight:600;
+            display:flex; align-items:center; justify-content:center; margin-top:1px;
+        }
+        .gate-skip {
+            display:block; width:100%; margin-top:26px; padding:12px;
+            border:none; background:none; font-family:inherit; font-size:15px;
+            color:var(--ios-gray); cursor:pointer;
+        }
+        .gate-skip:active { opacity:.5; }
+
+        .wh-input {
+            flex:1; min-width:0; border:none; outline:none; background:transparent;
+            font-family:inherit; font-size:16px; color:var(--ios-label); padding:0;
+        }
+        .wh-create {
+            flex:0 0 auto; margin-left:12px; padding:8px 14px; border:none;
+            border-radius:9px; background:var(--ios-blue); color:#fff;
+            font-family:inherit; font-size:14px; font-weight:600; cursor:pointer;
+        }
+        .wh-create:active { opacity:.6; }
+        .wh-create:disabled { background:var(--ios-gray3); color:var(--ios-gray); }
+
+        .wh-row .k { flex:1; }
+        .wh-row .tick { flex:0 0 auto; color:var(--ios-blue); font-size:17px; font-weight:600; }
+        .wh-empty { padding:26px 14px; text-align:center; color:var(--ios-gray); font-size:15px; }
+
+        .switch {
+            position:relative; flex:0 0 auto; width:51px; height:31px; border:none;
+            border-radius:16px; background:var(--ios-gray3); cursor:pointer;
+            padding:0; transition:background .2s;
+        }
+        .switch.on { background:var(--ios-green); }
+        .switch::after {
+            content:''; position:absolute; top:2px; left:2px; width:27px; height:27px;
+            border-radius:50%; background:#fff;
+            box-shadow:0 1px 3px rgba(0,0,0,.3); transition:transform .2s;
+        }
+        .switch.on::after { transform:translateX(20px); }
+
+        .page-foot {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 30px 16px 0;
+        }
+
+        .help-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--chip-bg);
+            color: var(--ios-gray);
+            text-decoration: none;
+        }
+
+        .help-link svg {
+            width: 22px;
+            height: 22px;
+            display: block;
+        }
+
+        .help-link:active { color: var(--ios-blue); }
+
+        button.help-link {
+            border: none;
+            background: none;
+            padding: 0;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        /* Камера */
+        #cameraModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #000;
+            z-index: 1000;
+        }
+
+        #cameraModal.active { display: block; }
+
+        #video {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .cam-close {
+            width: 46px;
+            height: 46px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.35);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            justify-self: start;
+        }
+
+        .cam-close:active { background: rgba(0,0,0,0.6); }
+
+        .cam-close svg { display: block; }
+
+        .cam-bar {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 20px 22px calc(96px + env(safe-area-inset-bottom, 0px));
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            z-index: 20;
+        }
+
+        .shutter {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: transparent;
+            border: 4px solid #fff;
+            padding: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .shutter::after {
+            content: '';
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background: #fff;
+            transition: transform 0.1s;
+        }
+
+        .shutter:active::after { transform: scale(0.88); }
+
+        .cam-gallery {
+            width: 46px;
+            height: 46px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(0,0,0,0.35);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            justify-self: end;
+        }
+
+        .cam-gallery:active { background: rgba(0,0,0,0.6); }
+
+        .cam-gallery svg {
+            width: 24px;
+            height: 24px;
+            display: block;
+        }
+
+        .cam-counter {
+            position: absolute;
+            top: calc(16px + env(safe-area-inset-top, 0px));
+            right: 16px;
+            display: flex;
+            gap: 6px;
+            z-index: 22;
+        }
+
+        .cam-counter img {
+            width: 44px;
+            height: 44px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1.5px solid rgba(255,255,255,0.85);
+        }
+
+        .cam-hint {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: calc(196px + env(safe-area-inset-bottom, 0px));
+            text-align: center;
+            color: #fff;
+            font-size: 14px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+            z-index: 20;
+        }
+
+        .flash {
+            position: absolute;
+            inset: 0;
+            background: #fff;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 15;
+        }
+
+        .flash.fire {
+            animation: flashAnim 0.25s ease-out;
+        }
+
+        @keyframes flashAnim {
+            0% { opacity: 0.9; }
+            100% { opacity: 0; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { animation: none !important; transition: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-bar">
+        <div class="chips">
+            <button type="button" class="chip" id="operatorBtn">
+                <span class="chip-label">Оператор</span>
+                <span class="chip-value" id="operatorName">—</span>
+            </button>
+            <button type="button" class="chip" id="warehouseBtn">
+                <span class="chip-label">Склад</span>
+                <span class="chip-value" id="warehouseName">—</span>
+            </button>
+        </div>
+        <button type="button" class="sync" id="syncBox">
+            <span class="sync-dot"></span><span id="syncText">—</span>
+        </button>
+    </div>
+
+    <div class="content">
+        <form id="inventoryForm" autocomplete="off" novalidate>
+            <div class="card">
+                <div class="photo-area">
+                    <div class="photo-strip" id="photoStrip"></div>
+                    <input type="file" id="fileInput" accept="image/*" hidden>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="row">
+                    <label for="itemName">Наименование</label>
+                    <input type="text" id="itemName" name="inv-title-field" placeholder="Обязательно" required
+                           autocomplete="new-password" autocorrect="off" autocapitalize="sentences"
+                           spellcheck="false" data-lpignore="true" enterkeyhint="next">
+                </div>
+                <div class="row">
+                    <label for="quantity">Количество</label>
+                    <input type="number" id="quantity" name="inv-qty-field" placeholder="0" min="0" inputmode="numeric" required autocomplete="off" enterkeyhint="done">
+                </div>
+                <div class="row stacked">
+                    <label>Состояние</label>
+                    <div class="segmented" id="conditionGroup" role="group">
+                        <button type="button" data-value="Хорошее">Хорошее</button>
+                        <button type="button" data-value="Есть дефекты">Есть дефекты</button>
+                        <button type="button" data-value="Под списание">Под списание</button>
+                    </div>
+                </div>
+                <div class="row stacked">
+                    <label>Работоспособность</label>
+                    <div class="segmented" id="workingGroup" role="group">
+                        <button type="button" data-value="Проверено">Проверено</button>
+                        <button type="button" data-value="Не работает">Не работает</button>
+                        <button type="button" data-value="Невозможно проверить">Не проверить</button>
+                    </div>
+                </div>
+                <div class="row stacked">
+                    <label for="notes">Примечание</label>
+                    <textarea id="notes" name="inv-note-field" placeholder="Необязательно" autocomplete="off" autocorrect="off"></textarea>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button type="submit" class="btn btn-filled" id="submitBtn">Добавить</button>
+                <button type="button" class="btn btn-tinted" id="cancelBtn" style="display:none;">Отмена</button>
+            </div>
+        </form>
+
+        <div id="tableSection"></div>
+        <div class="list-footer">
+            <span id="counter" class="footer-note"></span>
+            <button type="button" class="clear-btn" id="clearBtn" style="display:none;">Очистить список</button>
+        </div>
+
+        <div class="page-foot">
+            <a class="help-link" href="instruction.html" aria-label="Как пользоваться приложением">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9.2" stroke="currentColor" stroke-width="1.5"/>
+                    <circle cx="12" cy="7.9" r="1.15" fill="currentColor"/>
+                    <path d="M12 11v5.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+            </a>
+            <button type="button" class="help-link" id="settingsBtn" aria-label="Настройки">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4Z" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M19.3 14.4a1.5 1.5 0 0 0 .3 1.65l.06.06a1.8 1.8 0 1 1-2.55 2.55l-.06-.06a1.5 1.5 0 0 0-1.65-.3 1.5 1.5 0 0 0-.91 1.37v.17a1.8 1.8 0 1 1-3.6 0v-.09a1.5 1.5 0 0 0-.98-1.37 1.5 1.5 0 0 0-1.65.3l-.06.06a1.8 1.8 0 1 1-2.55-2.55l.06-.06a1.5 1.5 0 0 0 .3-1.65 1.5 1.5 0 0 0-1.37-.91h-.17a1.8 1.8 0 1 1 0-3.6h.09a1.5 1.5 0 0 0 1.37-.98 1.5 1.5 0 0 0-.3-1.65l-.06-.06A1.8 1.8 0 1 1 7.6 4.36l.06.06a1.5 1.5 0 0 0 1.65.3h.07a1.5 1.5 0 0 0 .91-1.37v-.17a1.8 1.8 0 1 1 3.6 0v.09a1.5 1.5 0 0 0 .91 1.37 1.5 1.5 0 0 0 1.65-.3l.06-.06a1.8 1.8 0 1 1 2.55 2.55l-.06.06a1.5 1.5 0 0 0-.3 1.65v.07a1.5 1.5 0 0 0 1.37.91h.17a1.8 1.8 0 1 1 0 3.6h-.09a1.5 1.5 0 0 0-1.37.91Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+
+    </div>
+
+
+<!-- предложение установить -->
+<div class="gate" id="installGate">
+    <div class="gate-box">
+        <div class="gate-icon">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 3.5v11M8.4 7.1 12 3.5l3.6 3.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M5.5 13.5v5a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2v-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <h2>Добавьте на экран «Домой»</h2>
+        <p>Пароль и имя запрашиваются один раз — но только в самом приложении. Если ввести их сейчас, в браузере, после установки придётся вводить заново: iPhone хранит эти данные раздельно.</p>
+
+        <ol class="gate-steps">
+            <li>Нажмите <b>Поделиться</b> внизу экрана</li>
+            <li>Пролистайте список и выберите <b>На экран «Домой»</b></li>
+            <li>Запускайте приложение с появившегося значка</li>
+        </ol>
+
+        <button type="button" class="gate-skip" id="gateSkip">Всё равно открыть в браузере</button>
+    </div>
+</div>
+
+<!-- выбор склада -->
+<div class="sheet" id="whSheet">
+    <div class="sheet-nav">
+        <button type="button" id="closeWh">Отмена</button>
+        <span class="title">Склад</span>
+        <span style="width:56px;"></span>
+    </div>
+    <div class="sheet-body">
+
+        <div class="set-group">
+            <div class="set-title">Новый склад</div>
+            <div class="set-card">
+                <div class="set-row">
+                    <input type="text" id="whNew" name="wh-new" class="wh-input"
+                           placeholder="Название нового склада"
+                           autocomplete="off" autocorrect="off" spellcheck="false"
+                           enterkeyhint="done">
+                    <button type="button" class="wh-create" id="whCreate">Создать</button>
+                </div>
+            </div>
+            <div class="set-note">Новый склад — это новый лист в таблице. Если склад уже есть в списке ниже, выберите его.</div>
+        </div>
+
+        <div class="set-group">
+            <div class="set-title">Уже в таблице</div>
+            <div class="set-card" id="whList"></div>
+            <div class="set-note" id="whHint"></div>
+        </div>
+
+    </div>
+</div>
+
+<!-- настройки -->
+<div class="sheet" id="settings">
+    <div class="sheet-nav">
+        <button type="button" id="closeSettings">Готово</button>
+        <span class="title">Настройки</span>
+        <span style="width:56px;"></span>
+    </div>
+    <div class="sheet-body">
+
+        <div class="set-group">
+            <div class="set-title">Подключение</div>
+            <div class="set-card">
+                <div class="set-row stacked">
+                    <span class="k">Ссылка на таблицу</span>
+                    <input type="text" class="url" id="cfgSheetUrl" name="cfg-sheet"
+                           placeholder="https://docs.google.com/spreadsheets/..."
+                           autocomplete="off" autocorrect="off" spellcheck="false">
+                </div>
+                <button type="button" class="set-row" id="cfgPassword">
+                    <span class="k">Пароль</span><span class="v" id="cfgPasswordV"></span><span class="chev">›</span>
+                </button>
+                <button type="button" class="set-row" id="cfgTest">
+                    <span class="k" style="color:var(--ios-blue);">Проверить связь</span>
+                </button>
+            </div>
+            <div class="set-note">Адрес скрипта задан в самом приложении. После нового развёртывания его меняют в файле и заливают заново — тогда обновится у всех сразу.</div>
+        </div>
+
+        <div class="set-group">
+            <div class="set-title">Склад</div>
+            <div class="set-card">
+                <button type="button" class="set-row" id="cfgWarehouse">
+                    <span class="k">Текущий склад</span><span class="v" id="cfgWarehouseV"></span><span class="chev">›</span>
+                </button>
+            </div>
+            <div class="set-note">Каждый склад — отдельный лист в таблице. Лист создаётся сам при первой записи.</div>
+        </div>
+
+        <div class="set-group">
+            <div class="set-title">Вид</div>
+            <div class="set-card">
+                <div class="set-row stacked">
+                    <span class="k">Тема</span>
+                    <div class="segmented" id="setTheme">
+                        <button type="button" data-v="dark">Тёмная</button>
+                        <button type="button" data-v="light">Светлая</button>
+                        <button type="button" data-v="">Как в системе</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="set-group">
+            <div class="set-title">Заполнение</div>
+            <div class="set-card">
+                <div class="set-row">
+                    <span class="k">Требовать состояние</span><span class="v"></span>
+                    <button type="button" class="switch" id="cfgReqCond" aria-label="Требовать состояние"></button>
+                </div>
+                <div class="set-row">
+                    <span class="k">Требовать работоспособность</span><span class="v"></span>
+                    <button type="button" class="switch" id="cfgReqWork" aria-label="Требовать работоспособность"></button>
+                </div>
+                <div class="set-row stacked">
+                    <span class="k">Отклик при сохранении</span>
+                    <div class="segmented" id="setFeedback">
+                        <button type="button" data-v="both">Звук и вибро</button>
+                        <button type="button" data-v="vibro">Вибро</button>
+                        <button type="button" data-v="sound">Звук</button>
+                        <button type="button" data-v="off">Нет</button>
+                    </div>
+                </div>
+                <div class="set-row stacked">
+                    <span class="k">Качество фото</span>
+                    <div class="segmented" id="setPhoto">
+                        <button type="button" data-v="eco">Экономно</button>
+                        <button type="button" data-v="normal">Обычное</button>
+                        <button type="button" data-v="high">Максимум</button>
+                    </div>
+                </div>
+                <div class="set-row stacked">
+                    <span class="k">Записей в списке</span>
+                    <div class="segmented" id="setMaxLocal">
+                        <button type="button" data-v="15">15</button>
+                        <button type="button" data-v="30">30</button>
+                        <button type="button" data-v="50">50</button>
+                        <button type="button" data-v="100">100</button>
+                    </div>
+                </div>
+            </div>
+            <div class="set-note">Экономное фото — около 60 КБ, максимум — до 400 КБ. На слабой связи меньше значит быстрее.</div>
+        </div>
+
+        <div class="set-group">
+            <div class="set-title">Материалы</div>
+            <div class="set-card">
+                <button type="button" class="set-row" id="cfgVersion">
+                    <span class="k">Версия</span><span class="v" id="cfgVersionV"></span><span class="chev">›</span>
+                </button>
+                <a class="set-row" href="instruction.html">
+                    <span class="k">Как пользоваться</span><span class="v"></span><span class="chev">›</span>
+                </a>
+                <a class="set-row" id="cfgOpenSheet" href="#" target="_blank" rel="noopener">
+                    <span class="k">Открыть таблицу</span><span class="v"></span><span class="chev">›</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="set-group">
+            <div class="set-title">Сброс</div>
+            <div class="set-card">
+                <button type="button" class="set-row danger" id="cfgClearList">
+                    <span class="k">Очистить список на телефоне</span>
+                </button>
+                <button type="button" class="set-row danger" id="cfgDropAll">
+                    <span class="k">Полный сброс приложения</span>
+                </button>
+            </div>
+            <div class="set-note">Сброс затрагивает только этот телефон. В таблице всё отправленное остаётся.</div>
+        </div>
+
+    </div>
+</div>
+
+    <div id="cameraModal">
+        <video id="video" playsinline muted></video>
+        <div class="flash" id="flash"></div>
+        <div class="cam-hint" id="camHint"></div>
+        <div class="cam-bar">
+            <button type="button" class="cam-close" onclick="closeCameraModal()" aria-label="Закрыть">
+                <svg width="20" height="20" viewBox="0 0 19 19" fill="none">
+                    <path d="M2 2L17 17M17 2L2 17" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/>
+                </svg>
+            </button>
+            <button type="button" class="shutter" id="captureBtn" aria-label="Сделать фото"></button>
+            <button type="button" class="cam-gallery" id="camGalleryBtn" aria-label="Выбрать из галереи">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <rect x="3.2" y="5.2" width="17.6" height="13.6" rx="2.4" stroke="#fff" stroke-width="1.7"/>
+                    <path d="M3.6 15.4 8.5 11a1.7 1.7 0 0 1 2.3 0l4 3.7m-1.2-1.1 1.9-1.7a1.7 1.7 0 0 1 2.3 0l2.6 2.4"
+                          stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="9" cy="9.4" r="1.4" fill="#fff"/>
+                </svg>
+            </button>
+        </div>
+        <div class="cam-counter" id="camCounter"></div>
+        <canvas id="canvas" hidden></canvas>
+    </div>
+
+    <script>
+        let items = [];
+        let editingId = null;
+        let photoData = '';
+        let photoData2 = '';
+        let videoStream = null;
+        let operator = '';
+        let photosDirty = false;
+        let warehouse = '';
+        let accessKey = '';
+
+        /* Версию меняем при каждой правке приложения — по ней телефоны
+           понимают, что появилась новая версия, и обновляются сами. */
+        const APP_VERSION = '2026-09-10-02';
+
+        /* ---------- настройки ---------- */
+        const CFG_DEFAULT = {
+            url: 'https://script.google.com/macros/s/AKfycby-WvnZSeTpOb4Zwx7Txhafdm7box09jZYDRXU1oi4nKCaI403jE5GILbv9H9NkJ5X7/exec',
+            sheetUrl: 'https://docs.google.com/spreadsheets/d/1YNFceMcy8vqtnr4vQJKLkU6IMHUwexfIdQ2FD_j4wPk/edit',
+            photo: 'normal',
+            feedback: 'both',
+            reqCond: false,
+            reqWork: false,
+            maxLocal: 30,
+            theme: 'dark',
+            role: '',
+            v: 2
+        };
+
+        const PHOTO_PRESETS = {
+            eco:    { max: 720,  q: 0.60, label: 'Экономно' },
+            normal: { max: 1080, q: 0.80, label: 'Обычное' },
+            high:   { max: 1440, q: 0.88, label: 'Максимум' }
+        };
+        const FEEDBACK_LABELS = { off: 'Выключен', vibro: 'Вибрация', sound: 'Звук', both: 'Звук и вибрация' };
+
+        function cfgLoad() {
+            try {
+                const v = localStorage.getItem('invConfig');
+                return Object.assign({}, CFG_DEFAULT, v ? JSON.parse(v) : {});
+            } catch (e) { return Object.assign({}, CFG_DEFAULT); }
+        }
+        let audioCtx = null;
+        function beep(ok) {
+            if (CFG.feedback !== 'sound' && CFG.feedback !== 'both') return;
+            try {
+                audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+                const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+                o.connect(g); g.connect(audioCtx.destination);
+                o.frequency.value = ok ? 880 : 320;
+                g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+                g.gain.exponentialRampToValueAtTime(0.22, audioCtx.currentTime + 0.01);
+                g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.16);
+                o.start(); o.stop(audioCtx.currentTime + 0.17);
+            } catch (e) {}
+        }
+        function buzz(p) {
+            if (CFG.feedback !== 'vibro' && CFG.feedback !== 'both') return;
+            if (navigator.vibrate) navigator.vibrate(p);
+        }
+        function feedbackOk()  { beep(true);  buzz(30); }
+        function feedbackBad() { beep(false); buzz([40, 60, 40]); }
+
+        function cfgSave() {
+            try { localStorage.setItem('invConfig', JSON.stringify(CFG)); } catch (e) {}
+        }
+
+        let CFG = cfgLoad();
+
+        // адрес скрипта живёт только в файле — сохранённое значение не используем
+        CFG.url = CFG_DEFAULT.url;
+
+        // разовый перенос: у кого осталось «как в системе» с прошлой версии — ставим тёмную
+        if (CFG.v !== 2) {
+            if (!CFG.theme) CFG.theme = 'dark';
+            CFG.v = 2;
+            cfgSave();
+        }
+        // ссылка на таблицу для значка внизу экрана; оставьте пустой — значок не появится
+
+
+        /* ======================= хранилище =======================
+           localStorage вмещает всего 5 МБ — при работе с фотографиями он
+           переполнялся, и записи терялись. Всё тяжёлое переехало в IndexedDB. */
+
+        /* Идентификатор записи должен быть уникален по всем телефонам.
+           Раньше это было просто время в миллисекундах: два оператора могли
+           попасть в одну миллисекунду, и вторая запись отбрасывалась скриптом
+           как повтор. Теперь к времени добавляется метка устройства. */
+
+        function deviceTag() {
+            let t = localStorage.getItem('inventoryDevice');
+            if (!t) {
+                t = Math.random().toString(36).slice(2, 8);
+                localStorage.setItem('inventoryDevice', t);
+            }
+            return t;
+        }
+
+        let idCounter = 0;
+        function newRecordId() {
+            idCounter = (idCounter + 1) % 1000;
+            return Date.now() + '-' + deviceTag() + '-' + idCounter;
+        }
+
+        let db = null;
+
+        function idbOpen() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open('inventory', 1);
+                req.onupgradeneeded = (e) => {
+                    const d = e.target.result;
+                    if (!d.objectStoreNames.contains('outbox')) d.createObjectStore('outbox', { keyPath: 'qid' });
+                    if (!d.objectStoreNames.contains('meta')) d.createObjectStore('meta');
+                };
+                req.onsuccess = (e) => resolve(e.target.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        function idbRun(store, mode, fn) {
+            return new Promise((resolve, reject) => {
+                if (!db) { reject(new Error('нет базы')); return; }
+                const tx = db.transaction(store, mode);
+                const os = tx.objectStore(store);
+                const req = fn(os);
+                tx.oncomplete = () => resolve(req ? req.result : undefined);
+                tx.onerror = () => reject(tx.error);
+                tx.onabort = () => reject(tx.error);
+            });
+        }
+
+        const idbPut    = (store, val, key) => idbRun(store, 'readwrite', os => os.put(val, key));
+        const idbGet    = (store, key)      => idbRun(store, 'readonly',  os => os.get(key));
+        const idbGetAll = (store)           => idbRun(store, 'readonly',  os => os.getAll());
+        const idbDel    = (store, key)      => idbRun(store, 'readwrite', os => os.delete(key));
+
+        /* ---------- список последних записей ---------- */
+
+        async function saveItems() {
+            if (items.length > CFG.maxLocal) items = items.slice(-CFG.maxLocal);
+            try { await idbPut('meta', items, 'items'); }
+            catch (e) { console.error('Не удалось сохранить список:', e); }
+        }
+
+        async function loadItems() {
+            try {
+                const saved = await idbGet('meta', 'items');
+                items = Array.isArray(saved) ? saved : [];
+            } catch (e) { items = []; }
+
+            // разовый перенос из старого хранилища
+            const legacy = localStorage.getItem('inventoryItems');
+            if (legacy) {
+                try {
+                    const old = JSON.parse(legacy);
+                    if (Array.isArray(old) && old.length && !items.length) items = old;
+                } catch (e) {}
+                localStorage.removeItem('inventoryItems');
+                await saveItems();
+            }
+
+            if (items.length > CFG.maxLocal) items = items.slice(-CFG.maxLocal);
+        }
+
+        /* ---------- Камера ---------- */
+
+        async function openCamera() {
+            if (photoData && photoData2) {
+                alert('Добавлено два фото. Удалите одно, чтобы снять новое.');
+                return;
+            }
+            document.getElementById('cameraModal').classList.add('active');
+            updateCamOverlay();
+
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    audio: false
+                });
+                const video = document.getElementById('video');
+                video.srcObject = videoStream;
+                video.onloadedmetadata = () => video.play().catch(e => console.error(e));
+            } catch (err) {
+                alert('Нет доступа к камере: ' + err.message);
+                closeCameraModal();
+            }
+        }
+
+        function updateCamOverlay() {
+            const count = (photoData ? 1 : 0) + (photoData2 ? 1 : 0);
+            const hint = document.getElementById('camHint');
+            hint.textContent = count === 0 ? 'Фото 1 из 2' : 'Фото 2 из 2';
+
+            const counter = document.getElementById('camCounter');
+            let html = '';
+            if (photoData) html += `<img src="${photoData}" alt="">`;
+            if (photoData2) html += `<img src="${photoData2}" alt="">`;
+            counter.innerHTML = html;
+        }
+
+        document.getElementById('captureBtn').addEventListener('click', () => {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+
+            if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            const photo = canvas.toDataURL('image/jpeg', 0.85);
+
+            const flash = document.getElementById('flash');
+            flash.classList.remove('fire');
+            void flash.offsetWidth;
+            flash.classList.add('fire');
+
+            if (!photoData) {
+                photoData = photo;
+            } else {
+                photoData2 = photo;
+            }
+            photosDirty = true;
+
+            updatePhotoStrip();
+            updateCamOverlay();
+
+            // Оба фото сняты — закрываем камеру
+            if (photoData && photoData2) {
+                setTimeout(closeCameraModal, 350);
+            }
+        });
+
+        function closeCameraModal() {
+            document.getElementById('cameraModal').classList.remove('active');
+            if (videoStream) {
+                videoStream.getTracks().forEach(t => t.stop());
+                videoStream = null;
+            }
+            document.getElementById('video').srcObject = null;
+        }
+
+        /* ---------- Галерея ---------- */
+
+        document.getElementById('camGalleryBtn').addEventListener('click', () => {
+            closeCameraModal();
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                if (!photoData) photoData = ev.target.result;
+                else photoData2 = ev.target.result;
+                photosDirty = true;
+                updatePhotoStrip();
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        });
+
+        function updatePhotoStrip() {
+            const strip = document.getElementById('photoStrip');
+            let html = '';
+            if (photoData) {
+                html += `<div class="photo-thumb"><img src="${photoData}" alt=""><button type="button" class="remove" onclick="removePhoto(1)" aria-label="Удалить фото">✕</button></div>`;
+            }
+            if (photoData2) {
+                html += `<div class="photo-thumb"><img src="${photoData2}" alt=""><button type="button" class="remove" onclick="removePhoto(2)" aria-label="Удалить фото">✕</button></div>`;
+            }
+            const count = (photoData ? 1 : 0) + (photoData2 ? 1 : 0);
+            for (let i = count; i < 2; i++) {
+                html += `<button type="button" class="photo-empty" onclick="openCamera()" aria-label="Добавить фото">+</button>`;
+            }
+            strip.innerHTML = html;
+        }
+
+        function removePhoto(slot) {
+            if (slot === 1) {
+                photoData = photoData2 || '';
+                photoData2 = '';
+            } else {
+                photoData2 = '';
+            }
+            photosDirty = true;
+            updatePhotoStrip();
+        }
+
+        /* ---------- Форма ---------- */
+
+        document.getElementById('inventoryForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('itemName').value.trim();
+            const quantity = document.getElementById('quantity').value.trim();
+            const notes = document.getElementById('notes').value.trim();
+
+            if (!name || !quantity) {
+                feedbackBad();
+                alert('Заполните наименование и количество');
+                return;
+            }
+
+            if (!accessKey) {
+                askKey(true);
+                return;
+            }
+
+            if (!operator) {
+                alert('Сначала укажите своё имя вверху экрана');
+                askOperator(true);
+                return;
+            }
+
+            if (!warehouse) {
+                alert('Сначала укажите склад вверху экрана');
+                askWarehouse(true);
+                return;
+            }
+
+            if (CFG.reqCond && !segmentedValue('conditionGroup')) {
+                feedbackBad(); alert('Выберите состояние'); return;
+            }
+            if (CFG.reqWork && !segmentedValue('workingGroup')) {
+                feedbackBad(); alert('Выберите работоспособность'); return;
+            }
+
+            // на Google Диск уходит полный кадр, в памяти телефона остаётся миниатюра
+            const fullPhoto = photoData;
+            const fullPhoto2 = photoData2;
+
+            const item = {
+                id: editingId || newRecordId(),
+                photo: await compressPhoto(photoData, 520, 0.6),
+                photo2: await compressPhoto(photoData2, 520, 0.6),
+                name,
+                quantity: parseInt(quantity),
+                warehouse,
+                notes,
+                condition: segmentedValue('conditionGroup'),
+                working: segmentedValue('workingGroup')
+            };
+
+            const forUpload = Object.assign({}, item, {
+                photo: photosDirty ? fullPhoto : '',
+                photo2: photosDirty ? fullPhoto2 : ''
+            });
+
+            // сначала ставим в очередь: пока запись не легла в хранилище,
+            // считать её сохранённой нельзя — иначе она пропадёт незаметно
+            try {
+                if (editingId) {
+                    await sendToGoogleSheets(forUpload, true);
+                } else {
+                    await sendToGoogleSheets(
+                        Object.assign({}, item, { photo: fullPhoto, photo2: fullPhoto2 }));
+                }
+            } catch (e) {
+                feedbackBad();
+                return;   // запись остаётся в форме, ничего не потеряно
+            }
+
+            if (editingId) {
+                items = items.map(i => String(i.id) === String(editingId) ? item : i);
+                editingId = null;
+                document.getElementById('cancelBtn').style.display = 'none';
+                document.getElementById('submitBtn').textContent = 'Добавить';
+            } else {
+                // в таблице записи остаются навсегда, в телефоне — только последние
+                items.push(item);
+            }
+
+            await saveItems();
+            resetForm();
+            renderTable();
+            feedbackOk();
+        });
+
+        // переключатели «Состояние» и «Работоспособность»: можно снять выбор повторным нажатием
+        function setupSegmented(groupId) {
+            const group = document.getElementById(groupId);
+            group.addEventListener('click', (e) => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const was = btn.classList.contains('on');
+                group.querySelectorAll('button').forEach(b => b.classList.remove('on'));
+                if (!was) btn.classList.add('on');
+            });
+        }
+
+        setupSegmented('conditionGroup');
+        setupSegmented('workingGroup');
+
+        function segmentedValue(groupId) {
+            const on = document.querySelector('#' + groupId + ' button.on');
+            return on ? on.dataset.value : '';
+        }
+
+        function setSegmented(groupId, value) {
+            document.querySelectorAll('#' + groupId + ' button').forEach(b => {
+                b.classList.toggle('on', b.dataset.value === value);
+            });
+        }
+
+        // Enter на клавиатуре ведёт по форме и в конце добавляет запись,
+        // чтобы не тянуться к кнопке из-под клавиатуры
+        document.getElementById('itemName').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('quantity').focus();
+            }
+        });
+
+        document.getElementById('quantity').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.activeElement.blur();
+                document.getElementById('inventoryForm')
+                        .dispatchEvent(new Event('submit', { cancelable: true }));
+            }
+        });
+
+        // как только клавиатура открылась, подтягиваем кнопку в поле зрения
+        ['itemName', 'quantity', 'notes'].forEach(id => {
+            document.getElementById(id).addEventListener('focus', () => {
+                setTimeout(() => {
+                    document.querySelector('.btn-row')
+                            .scrollIntoView({ block: 'end', behavior: 'smooth' });
+                }, 320);
+            });
+        });
+
+        function resetForm() {
+            document.getElementById('inventoryForm').reset();
+            setSegmented('conditionGroup', '');
+            setSegmented('workingGroup', '');
+            photoData = '';
+            photoData2 = '';
+            photosDirty = false;
+            document.getElementById('fileInput').value = '';
+            updatePhotoStrip();
+        }
+
+        document.getElementById('cancelBtn').addEventListener('click', () => {
+            editingId = null;
+            document.getElementById('cancelBtn').style.display = 'none';
+            document.getElementById('submitBtn').textContent = 'Добавить';
+            resetForm();
+        });
+
+        function editItem(id) {
+            const item = items.find(i => String(i.id) === String(id));
+            if (!item) return;
+            document.getElementById('itemName').value = item.name;
+            document.getElementById('quantity').value = item.quantity;
+            document.getElementById('notes').value = item.notes;
+            setSegmented('conditionGroup', item.condition || '');
+            setSegmented('workingGroup', item.working || '');
+            photoData = item.photo || '';
+            photoData2 = item.photo2 || '';
+            photosDirty = false;
+            updatePhotoStrip();
+            editingId = id;
+            document.getElementById('cancelBtn').style.display = 'flex';
+            document.getElementById('submitBtn').textContent = 'Сохранить';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function deleteItem(id) {
+            const item = items.find(i => String(i.id) === String(id));
+            if (!item) return;
+            if (!confirm('Удалить «' + item.name + '»?')) return;
+            try { await sendDeleteToGoogleSheets(item); }
+            catch (e) { feedbackBad(); return; }
+            items = items.filter(i => String(i.id) !== String(id));
+            await saveItems();
+            renderTable();
+        }
+
+        /* ---------- Google Sheets ---------- */
+
+        function compressPhoto(base64Str, maxSide, quality) {
+            const preset = PHOTO_PRESETS[CFG.photo] || PHOTO_PRESETS.normal;
+            maxSide = maxSide || preset.max;
+            quality = quality || preset.q;
+            return new Promise((resolve) => {
+                if (!base64Str) { resolve(''); return; }
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    if (w > maxSide || h > maxSide) {
+                        if (w > h) { h = Math.round(h * maxSide / w); w = maxSide; }
+                        else { w = Math.round(w * maxSide / h); h = maxSide; }
+                    }
+                    canvas.width = w;
+                    canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = () => resolve('');
+                img.src = base64Str;
+            });
+        }
+
+        /* ======================= очередь отправки =======================
+           Записи лежат в IndexedDB и уходят по одной. Пока сервер не
+           подтвердил — запись из очереди не исчезает. Повторная отправка
+           той же записи безопасна: скрипт узнаёт её по ID и не дублирует. */
+
+        let queue = [];
+        let sending = false;
+        let pendingIds = new Set();
+
+        async function loadQueue() {
+            try { queue = await idbGetAll('outbox') || []; }
+            catch (e) { queue = []; }
+            queue.sort((a, b) => a.qid - b.qid);
+
+            // перенос очереди из старого хранилища
+            const legacy = localStorage.getItem('inventoryQueue');
+            if (legacy) {
+                try {
+                    const old = JSON.parse(legacy);
+                    if (Array.isArray(old)) {
+                        for (const p of old) {
+                            const rec = { qid: Date.now() + Math.random(), payload: p };
+                            await idbPut('outbox', rec);
+                            queue.push(rec);
+                        }
+                    }
+                } catch (e) {}
+                localStorage.removeItem('inventoryQueue');
+            }
+            refreshPending();
+        }
+
+        function refreshPending() {
+            pendingIds = new Set(queue.map(q => String(q.payload.id || '')));
+        }
+
+        async function enqueue(payload) {
+            const rec = { qid: Date.now() + Math.random(), payload: payload };
+            try {
+                await idbPut('outbox', rec);
+            } catch (e) {
+                alert('Телефон не смог сохранить запись.\n\n' +
+                      'Скорее всего кончилось место. Что делать:\n' +
+                      '1. Дождитесь, пока уйдут записи из очереди — счётчик вверху экрана.\n' +
+                      '2. Если очередь пуста, освободите место на телефоне.\n' +
+                      '3. Затем нажмите «Добавить» ещё раз — данные в форме сохранились.\n\n' +
+                      'Запись НЕ потеряна: она осталась в форме.');
+                throw e;
+            }
+            queue.push(rec);
+            refreshPending();
+            paintSync();
+            flush();
+        }
+
+        async function flush() {
+            if (sending || !queue.length || !navigator.onLine) return;
+            sending = true;
+            paintSync();
+
+            try {
+                let attempts = 0;
+
+                while (queue.length && attempts < queue.length + 3) {
+                    attempts++;
+                    const rec = queue[0];
+                    let done = false;
+                    let serverError = false;
+
+                    try {
+                        const res = await fetch(CFG.url, {
+                            method: 'POST',
+                            body: JSON.stringify(Object.assign({ key: accessKey }, rec.payload))
+                        });
+                        const r = await res.json();
+
+                        if (r.role) { CFG.role = r.role; cfgSave(); }
+                        if (r.code === 'auth') { keyRejected(); break; }
+                        if (r.status === 'success') done = true;
+                        else serverError = true;      // скрипт ответил, но с ошибкой
+                    } catch (e) {
+                        break;                        // связь оборвалась — ждём следующего раза
+                    }
+
+                    if (done) {
+                        try { await idbDel('outbox', rec.qid); } catch (e) {}
+                        queue.shift();
+                        refreshPending();
+                        paintSync();
+                        renderTable();
+                        continue;
+                    }
+
+                    if (serverError) {
+                        // одна проблемная запись не должна держать всю очередь:
+                        // отправляем её в конец и берёмся за следующие
+                        rec.tries = (rec.tries || 0) + 1;
+                        try { await idbPut('outbox', rec); } catch (e) {}
+                        queue.shift();
+                        queue.push(rec);
+
+                        if (rec.tries === 5) {
+                            alert('Запись «' + (rec.payload.name || '') + '» не принимается таблицей.\n' +
+                                  'Остальные записи отправляются, эта будет пробовать дальше.\n' +
+                                  'Покажите это сообщение ответственному.');
+                        }
+                    }
+                }
+            } finally {
+                // без этого одна ошибка навсегда останавливала бы отправку
+                sending = false;
+                paintSync();
+                renderTable();
+            }
+        }
+
+        function paintSync() {
+            const box = document.getElementById('syncBox');
+            const txt = document.getElementById('syncText');
+            if (!box) return;
+
+            box.className = 'sync';
+            if (sending) { box.classList.add('pending'); txt.textContent = 'Отправка… осталось ' + queue.length; return; }
+            if (!navigator.onLine) { box.classList.add('pending'); txt.textContent = 'Нет связи · ждут ' + queue.length; return; }
+            if (queue.length) { box.classList.add('pending'); txt.textContent = 'Ждут отправки: ' + queue.length; return; }
+            box.classList.add('ok');
+            txt.textContent = 'Всё отправлено';
+        }
+
+        window.addEventListener('online', flush);
+        setInterval(flush, 15000);
+
+        /* ---------- постановка в очередь ---------- */
+
+        async function sendToGoogleSheets(item, isEdit = false) {
+            const photo = item.photo ? await compressPhoto(item.photo) : '';
+            const photo2 = item.photo2 ? await compressPhoto(item.photo2) : '';
+
+            await enqueue({
+                action: isEdit ? 'update' : 'add',
+                sheet: item.warehouse,
+                id: String(item.id),
+                operator: operator,
+                name: item.name,
+                quantity: item.quantity,
+                warehouse: item.warehouse,
+                notes: item.notes,
+                condition: item.condition || '',
+                working: item.working || '',
+                photo: photo,
+                photo2: photo2
+            });
+        }
+
+        async function sendDeleteToGoogleSheets(item) {
+            await enqueue({
+                action: 'delete',
+                sheet: item.warehouse,
+                id: String(item.id),
+                name: item.name
+            });
+        }
+
+        /* ---------- Список ---------- */
+
+        function renderTable() {
+            const section = document.getElementById('tableSection');
+            const counter = document.getElementById('counter');
+
+            const clearBtn = document.getElementById('clearBtn');
+
+            if (items.length === 0) {
+                counter.textContent = '';
+                clearBtn.style.display = 'none';
+                section.innerHTML = '<div class="empty">Пока пусто. Добавьте первый товар.</div>';
+                return;
+            }
+
+
+            let html = '<div class="card">';
+            items.forEach(item => {
+                let photos = '';
+                if (item.photo) photos += `<img src="${item.photo}" alt="">`;
+                if (item.photo2) photos += `<img src="${item.photo2}" alt="">`;
+                if (!photos) photos = `<div class="item-nophoto">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M4 8.6 12 4l8 4.6v6.8L12 20l-8-4.6V8.6Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                        <path d="M4 8.6 12 13m0 0 8-4.4M12 13v7" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                    </svg>
+                </div>`;
+
+                const waiting = pendingIds.has(String(item.id));
+                const meta = [
+                    item.quantity + ' шт', item.warehouse,
+                    item.condition, item.working, item.notes
+                ].filter(Boolean).join(' · ');
+
+                html += `<div class="item-row">
+                    <div class="item-photos">${photos}</div>
+                    <div class="item-info">
+                        <div class="item-name">${waiting ? '<span class="wait-dot"></span>' : ''}${escapeHtml(item.name)}</div>
+                        <div class="item-meta">${escapeHtml(meta)}</div>
+                    </div>
+                    <div class="item-actions">
+                        <button type="button" class="icon-btn" onclick="editItem('${item.id}')" aria-label="Изменить">
+                            <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+                                <path d="M14.6 3.9a1.9 1.9 0 0 1 2.7 0l.8.8a1.9 1.9 0 0 1 0 2.7L8.6 17H5v-3.6l9.6-9.5Z"
+                                      stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="icon-btn destructive" onclick="deleteItem('${item.id}')" aria-label="Удалить">
+                            <svg viewBox="0 0 22 22" fill="none" aria-hidden="true">
+                                <path d="M4.5 6h13M9 6V4.6h4V6M6.5 6l.7 10.4a1.4 1.4 0 0 0 1.4 1.3h4.8a1.4 1.4 0 0 0 1.4-1.3L15.5 6"
+                                      stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>`;
+            });
+            html += '</div>';
+
+            section.innerHTML = html;
+            counter.textContent = 'В приложении: ' + items.length + ' из последних ' + CFG.maxLocal;
+            clearBtn.style.display = 'block';
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[c]));
+        }
+
+        function loadOperator() {
+            operator = localStorage.getItem('inventoryOperator') || '';
+            document.getElementById('operatorName').textContent = operator || 'Не задан';
+        }
+
+        function loadKey() {
+            accessKey = localStorage.getItem('inventoryKey') || '';
+        }
+
+        function askKey(force) {
+            const entered = prompt('Пароль доступа (спросите у ответственного за таблицу):', '');
+            const clean = entered === null ? '' : entered.trim();
+            if (!clean) {
+                if (force) setTimeout(() => askKey(true), 150);
+                return;
+            }
+            accessKey = clean;
+            localStorage.setItem('inventoryKey', accessKey);
+            if (force && !operator) setTimeout(() => askOperator(true), 200);
+        }
+
+        function keyRejected() {
+            accessKey = '';
+            localStorage.removeItem('inventoryKey');
+            alert('Пароль не подошёл. Введите ещё раз.');
+            setTimeout(() => askKey(true), 150);
+        }
+
+        function loadWarehouse() {
+            warehouse = localStorage.getItem('inventoryWarehouse') || '';
+            document.getElementById('warehouseName').textContent = warehouse || 'Не задан';
+        }
+
+        /* ---------- список складов = листы таблицы ---------- */
+        let warehouses = [];
+
+        function loadWarehouses() {
+            try { warehouses = JSON.parse(localStorage.getItem('inventoryWarehouses') || '[]'); }
+            catch (e) { warehouses = []; }
+        }
+
+        async function fetchWarehouses() {
+            if (!CFG.url || !accessKey) return false;
+            try {
+                const res = await fetch(CFG.url, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'ping', key: accessKey })
+                });
+                const r = await res.json();
+                if (r.role) { CFG.role = r.role; cfgSave(); }
+                if (r.status === 'success' && Array.isArray(r.sheets)) {
+                    warehouses = r.sheets;
+                    localStorage.setItem('inventoryWarehouses', JSON.stringify(warehouses));
+                    return true;
+                }
+            } catch (e) {}
+            return false;
+        }
+
+        function rememberWarehouse(name) {
+            if (name && warehouses.indexOf(name) === -1) {
+                warehouses.push(name);
+                localStorage.setItem('inventoryWarehouses', JSON.stringify(warehouses));
+            }
+        }
+
+        function applyWarehouse(name) {
+            warehouse = name;
+            localStorage.setItem('inventoryWarehouse', warehouse);
+            document.getElementById('warehouseName').textContent = warehouse;
+            rememberWarehouse(warehouse);
+        }
+
+        function newWarehouse(force) {
+            const entered = prompt('Название нового склада:', '');
+            const clean = entered === null ? '' : entered.trim();
+            if (!clean) {
+                if (force) setTimeout(() => askWarehouse(true), 150);
+                return;
+            }
+            // защита от почти одинаковых названий
+            const same = warehouses.find(w => w.toLowerCase().trim() === clean.toLowerCase());
+            if (same) {
+                alert('Такой склад уже есть: «' + same + '».\nВыбран он, новый лист не создан.');
+                applyWarehouse(same);
+                return;
+            }
+            applyWarehouse(clean);
+        }
+
+        /* ---------- экран выбора склада ---------- */
+        let whForce = false;
+
+        async function askWarehouse(force) {
+            whForce = !!force;
+            document.getElementById('whNew').value = '';
+            paintWhList();
+            document.getElementById('whHint').textContent = 'Обновляю список…';
+            document.getElementById('whSheet').classList.add('open');
+            document.body.style.overflow = 'hidden';
+
+            const ok = await fetchWarehouses();
+            paintWhList();
+            document.getElementById('whHint').textContent = ok
+                ? 'Список взят из листов таблицы.'
+                : 'Нет связи — показан список с прошлого раза.';
+        }
+
+        function paintWhList() {
+            const box = document.getElementById('whList');
+            if (!warehouses.length) {
+                box.innerHTML = '<div class="wh-empty">Складов пока нет.<br>Создайте первый выше.</div>';
+                return;
+            }
+            box.innerHTML = warehouses.map((w, i) =>
+                '<button type="button" class="set-row wh-row" data-i="' + i + '">' +
+                '<span class="k">' + escapeHtml(w) + '</span>' +
+                (w === warehouse ? '<span class="tick">✓</span>' : '<span class="chev">›</span>') +
+                '</button>'
+            ).join('');
+
+            box.querySelectorAll('.wh-row').forEach(b => b.addEventListener('click', () => {
+                applyWarehouse(warehouses[Number(b.dataset.i)]);
+                closeWh(true);
+            }));
+        }
+
+        function closeWh(chosen) {
+            if (!chosen && whForce && !warehouse) {
+                alert('Склад нужно выбрать — без него запись некуда отправлять.');
+                return;
+            }
+            document.getElementById('whSheet').classList.remove('open');
+            document.body.style.overflow = '';
+            whForce = false;
+        }
+
+        document.getElementById('closeWh').addEventListener('click', () => closeWh(false));
+
+        document.getElementById('whCreate').addEventListener('click', createWarehouse);
+        document.getElementById('whNew').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); createWarehouse(); }
+        });
+
+        function createWarehouse() {
+            const clean = document.getElementById('whNew').value.trim();
+            if (!clean) { feedbackBad(); alert('Впишите название склада'); return; }
+
+            // защита от почти одинаковых названий
+            const same = warehouses.find(w => w.toLowerCase().trim() === clean.toLowerCase());
+            if (same) {
+                alert('Такой склад уже есть: «' + same + '».\nВыбран он, новый лист не создан.');
+                applyWarehouse(same);
+                closeWh(true);
+                return;
+            }
+
+            applyWarehouse(clean);
+            closeWh(true);
+        }
+
+        function askOperator(force) {
+            const entered = prompt('Ваше имя — оно попадёт в таблицу рядом с каждой записью:', operator);
+            const clean = entered === null ? '' : entered.trim();
+            if (!clean) {
+                // обязательное поле: спрашиваем, пока не введут
+                if (force) setTimeout(() => askOperator(true), 150);
+                return;
+            }
+            operator = clean;
+            localStorage.setItem('inventoryOperator', operator);
+            document.getElementById('operatorName').textContent = operator;
+            if (force && !warehouse) setTimeout(() => askWarehouse(true), 200);
+        }
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            if (!confirm('Очистить список на этом устройстве?\n\nЗаписи останутся в Google Таблице — исчезнут только с экрана.')) return;
+            items = [];
+            saveItems();
+            renderTable();
+        });
+
+        document.getElementById('operatorBtn').addEventListener('click', () => askOperator(false));
+        document.getElementById('warehouseBtn').addEventListener('click', () => askWarehouse(false));
+
+        // тема: по умолчанию системная, выбор запоминается
+
+        /* ---------- перенос настроек ссылкой ---------- */
+        function packConfig() {
+            const payload = JSON.stringify({ url: CFG.url, sheetUrl: CFG.sheetUrl });
+            return btoa(unescape(encodeURIComponent(payload)));
+        }
+
+        function unpackConfig(code) {
+            try { return JSON.parse(decodeURIComponent(escape(atob(code)))); }
+            catch (e) { return null; }
+        }
+
+        // ссылка вида .../index.html#cfg=...
+        function applyConfigFromHash() {
+            const h = location.hash || '';
+            if (h.indexOf('#cfg=') !== 0) return;
+
+            const data = unpackConfig(h.slice(5));
+            history.replaceState(null, '', location.pathname + location.search);
+            if (!data || !data.url) return;
+
+            if (data.url === CFG.url && (data.sheetUrl || '') === (CFG.sheetUrl || '')) return;
+
+            CFG.url = data.url;
+            if (data.sheetUrl) CFG.sheetUrl = data.sheetUrl;
+            cfgSave();
+            localStorage.removeItem('inventoryWarehouses');
+            setTimeout(() => alert('Настройки подключения обновлены.'), 300);
+        }
+
+        /* ======================= настройки ======================= */
+
+        async function requireAdmin() {
+            if (CFG.role === 'admin') return true;
+
+            if (!CFG.url) {
+                alert('Ссылка на скрипт не указана — открываю настройки.');
+                return true;
+            }
+
+            const p = prompt('Настройки доступны ответственному.\nВведите пароль администратора:', '');
+            const clean = p === null ? '' : p.trim();
+            if (!clean) return false;
+
+            let detail = '';
+            try {
+                const res = await fetch(CFG.url, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'ping', key: clean })
+                });
+                const text = await res.text();
+
+                let r = null;
+                try { r = JSON.parse(text); }
+                catch (e) { detail = 'Скрипт ответил не по формату (код ' + res.status + ').'; }
+
+                if (r) {
+                    if (r.status === 'success' && r.role === 'admin') {
+                        CFG.role = 'admin'; cfgSave(); return true;
+                    }
+                    if (r.code === 'auth') { alert('Пароль не подошёл.'); return false; }
+                    if (r.status === 'success' && !r.role) {
+                        detail = 'Скрипт старой версии: он не различает роли.';
+                    } else {
+                        detail = r.message || 'Скрипт вернул ошибку.';
+                    }
+                }
+            } catch (e) {
+                detail = 'Нет связи со скриптом.';
+            }
+
+            // не смогли проверить — даём войти, иначе ссылку не починить
+            return confirm(detail + '\n\nОткрыть настройки, чтобы исправить ссылку или пароль?');
+        }
+
+        async function openSettings() {
+            if (!(await requireAdmin())) return;
+            paintSettings();
+            document.getElementById('settings').classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeSettings() {
+            document.getElementById('settings').classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        document.getElementById('settingsBtn').addEventListener('click', openSettings);
+        document.getElementById('closeSettings').addEventListener('click', closeSettings);
+
+        function paintSettings() {
+            document.getElementById('cfgSheetUrl').value = CFG.sheetUrl || '';
+            document.getElementById('cfgPasswordV').textContent = accessKey ? 'задан' : 'не задан';
+            document.getElementById('cfgWarehouseV').textContent = warehouse || 'не задан';
+
+            document.getElementById('cfgReqCond').classList.toggle('on', !!CFG.reqCond);
+            document.getElementById('cfgReqWork').classList.toggle('on', !!CFG.reqWork);
+
+            markSeg('setTheme', CFG.theme || '');
+            markSeg('setFeedback', CFG.feedback);
+            markSeg('setPhoto', CFG.photo);
+            markSeg('setMaxLocal', String(CFG.maxLocal));
+
+            document.getElementById('cfgVersionV').textContent = APP_VERSION;
+
+            const openSheet = document.getElementById('cfgOpenSheet');
+            openSheet.href = CFG.sheetUrl || '#';
+            openSheet.style.display = CFG.sheetUrl ? 'flex' : 'none';
+        }
+
+        function markSeg(id, value) {
+            document.querySelectorAll('#' + id + ' button').forEach(b =>
+                b.classList.toggle('on', b.dataset.v === value));
+        }
+
+        // сегменты в настройках: выбор всегда один, снять нельзя
+        function bindSeg(id, apply) {
+            document.getElementById(id).addEventListener('click', (e) => {
+                const b = e.target.closest('button');
+                if (!b) return;
+                apply(b.dataset.v);
+                cfgSave();
+                paintSettings();
+            });
+        }
+
+        bindSeg('setTheme', v => { CFG.theme = v; applyTheme(v); });
+        bindSeg('setFeedback', v => { CFG.feedback = v; setTimeout(feedbackOk, 60); });
+        bindSeg('setPhoto', v => { CFG.photo = v; });
+        bindSeg('setMaxLocal', v => {
+            CFG.maxLocal = Number(v);
+            if (items.length > CFG.maxLocal) { items = items.slice(-CFG.maxLocal); saveItems(); renderTable(); }
+        });
+
+        /* --- подключение --- */
+        document.getElementById('cfgSheetUrl').addEventListener('change', (e) => {
+            CFG.sheetUrl = e.target.value.trim(); cfgSave(); paintSheetLink();
+        });
+        document.getElementById('cfgPassword').addEventListener('click', () => {
+            askKey(false);
+            setTimeout(paintSettings, 100);
+        });
+
+        document.getElementById('cfgTest').addEventListener('click', async () => {
+            if (!CFG.url) { alert('Сначала вставьте ссылку Apps Script'); return; }
+            try {
+                const res = await fetch(CFG.url, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'ping', key: accessKey })
+                });
+                const r = await res.json();
+                if (r.code === 'auth') { alert('Связь есть, но пароль не подошёл.'); return; }
+                if (r.status === 'success') {
+                    alert('Связь работает.' + (r.sheets ? '\nЛисты: ' + r.sheets.join(', ') : ''));
+                } else {
+                    alert('Скрипт ответил ошибкой:\n' + (r.message || ''));
+                }
+            } catch (e) {
+                alert('Не удалось связаться со скриптом.\nПроверьте ссылку и интернет.');
+            }
+        });
+
+        document.getElementById('cfgVersion').addEventListener('click', () => checkUpdate(true));
+
+        /* --- оператор --- */
+
+        document.getElementById('cfgWarehouse').addEventListener('click', () => {
+            askWarehouse(false); setTimeout(paintSettings, 100);
+        });
+
+        /* --- вид --- */
+
+
+        /* --- заполнение --- */
+        function toggleCfg(id, field) {
+            document.getElementById(id).addEventListener('click', () => {
+                CFG[field] = !CFG[field]; cfgSave(); paintSettings();
+            });
+        }
+        toggleCfg('cfgReqCond', 'reqCond');
+        toggleCfg('cfgReqWork', 'reqWork');
+
+
+
+
+
+
+
+        /* --- сброс --- */
+        document.getElementById('cfgClearList').addEventListener('click', () => {
+            if (!items.length) { alert('Список уже пуст'); return; }
+            if (!confirm('Очистить список на этом устройстве?\n\nЗаписи останутся в Google Таблице.')) return;
+            items = []; saveItems(); renderTable(); paintSettings();
+        });
+
+        document.getElementById('cfgDropAll').addEventListener('click', () => {
+            if (!confirm('Полный сброс: список, имя, склад, пароль и настройки.\n\nПродолжить?')) return;
+            ['inventoryItems','inventoryOperator','inventoryWarehouse','inventoryKey',
+             'inventoryTheme','invConfig'].forEach(k => localStorage.removeItem(k));
+            location.reload();
+        });
+
+        function applyTheme(mode) {
+            if (mode) document.documentElement.setAttribute('data-theme', mode);
+            else document.documentElement.removeAttribute('data-theme');
+        }
+
+        function currentlyDark() {
+            if (CFG.theme) return CFG.theme === 'dark';
+            return window.matchMedia('(prefers-color-scheme: dark)').matches;
+        }
+
+        applyTheme(CFG.theme);
+
+
+        function paintSheetLink() {
+            const row = document.getElementById('cfgOpenSheet');
+            if (row) row.style.display = CFG.sheetUrl ? 'flex' : 'none';
+        }
+
+        loadKey();
+        loadWarehouses();
+        loadOperator();
+        loadWarehouse();
+        updatePhotoStrip();
+
+        applyConfigFromHash();
+        document.getElementById('syncBox').addEventListener('click', flush);
+
+        /* ---------- проверка обновлений ----------
+           iPhone держит стартовую страницу в кэше и сам её не перепроверяет,
+           поэтому раньше приходилось удалять значок с экрана и добавлять заново. */
+
+        async function checkUpdate(loud) {
+            try {
+                const res = await fetch(location.pathname + '?_=' + Date.now(), { cache: 'no-store' });
+                const text = await res.text();
+                const m = text.match(/APP_VERSION\s*=\s*'([^']+)'/);
+                if (!m) return false;
+
+                if (m[1] !== APP_VERSION) {
+                    if (queue.length) {
+                        // сначала отправим накопленное, обновимся позже
+                        if (loud) alert('Есть новая версия, но сначала уйдут записи из очереди.');
+                        return false;
+                    }
+                    location.replace(location.pathname + '?v=' + encodeURIComponent(m[1]));
+                    return true;
+                }
+                if (loud) alert('Установлена последняя версия: ' + APP_VERSION);
+            } catch (e) {
+                if (loud) alert('Не удалось проверить обновление.');
+            }
+            return false;
+        }
+
+        // при запуске и при возвращении в приложение
+        setTimeout(() => checkUpdate(false), 3000);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) setTimeout(() => checkUpdate(false), 1500);
+        });
+
+        /* ---------- в браузере не спрашиваем ничего ---------- */
+        function isStandalone() {
+            return window.navigator.standalone === true ||
+                   window.matchMedia('(display-mode: standalone)').matches;
+        }
+        function isIOS() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent);
+        }
+
+        async function startApp() {
+            try { db = await idbOpen(); }
+            catch (e) { alert('Не удалось открыть хранилище телефона.\nЗаписи могут не сохраняться.'); }
+
+            await loadItems();
+            await loadQueue();
+            renderTable();
+            paintSync();
+            flush();
+            fetchWarehouses();
+            if (!accessKey) {
+                setTimeout(() => askKey(true), 400);
+            } else if (!operator) {
+                setTimeout(() => askOperator(true), 400);
+            } else if (!warehouse) {
+                setTimeout(() => askWarehouse(true), 400);
+            }
+        }
+
+        // на айфоне Safari и приложение с экрана «Домой» хранят данные раздельно,
+        // поэтому в браузере просим сначала установить — иначе всё вводить дважды
+        if (isIOS() && !isStandalone() && localStorage.getItem('inventorySkipInstall') !== '1') {
+            document.getElementById('installGate').classList.add('open');
+            document.body.style.overflow = 'hidden';
+
+            document.getElementById('gateSkip').addEventListener('click', () => {
+                localStorage.setItem('inventorySkipInstall', '1');
+                document.getElementById('installGate').classList.remove('open');
+                document.body.style.overflow = '';
+                startApp();
+            });
+        } else {
+            startApp();
+        }
+    </script>
+</body>
+</html>

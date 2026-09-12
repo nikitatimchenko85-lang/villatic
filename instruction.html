@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101014">
+<title>Инвентаризация — как пользоваться</title>
+<style>
+    :root {
+        --paper: #101014;
+        --ink: #F2F2F7;
+        --ink-soft: #A8A8AE;
+        --rule: #2C2C2E;
+        --blue: #0A84FF;
+        --red: #FF453A;
+        --grey: #98989F;
+        --panel: #1C1C1E;
+        --screen: #1C1C1E;
+        --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        --serif: Charter, 'Bitstream Charter', 'Iowan Old Style', Georgia, serif;
+        color-scheme: dark;
+    }
+
+    @media (prefers-color-scheme: light) {
+        :root {
+            --paper: #FBFAF8;
+            --ink: #1C1C1E;
+            --ink-soft: #5B5B60;
+            --rule: #E3E0DA;
+            --blue: #007AFF;
+            --red: #FF3B30;
+            --grey: #8E8E93;
+            --panel: #FFFFFF;
+            --screen: #F2F2F7;
+            color-scheme: light;
+        }
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        background: var(--paper);
+        color: var(--ink);
+        font-family: var(--serif);
+        font-size: 18px;
+        line-height: 1.62;
+        padding: 0 22px 90px;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap { max-width: 660px; margin: 0 auto; }
+
+    .back {
+        display: inline-flex; align-items: center; gap: 5px;
+        margin-top: 22px;
+        font-family: var(--sans); font-size: 15px;
+        color: var(--blue); text-decoration: none;
+    }
+    .back:active { opacity: .5; }
+    .back-bottom { margin-top: 44px; }
+
+    .cover {
+        display: grid; grid-template-columns: 1fr auto;
+        gap: 34px; align-items: center;
+        padding: 26px 0 44px;
+        border-bottom: 1px solid var(--rule);
+    }
+
+    h1 { font-size: 40px; line-height: 1.12; font-weight: 600; letter-spacing: -.4px; }
+    .cover p { margin-top: 16px; color: var(--ink-soft); font-size: 17px; max-width: 34ch; }
+
+    .step {
+        display: grid; grid-template-columns: 46px 1fr; gap: 0 20px;
+        padding: 40px 0 4px; border-bottom: 1px solid var(--rule);
+    }
+    .num { font-family: var(--sans); font-size: 15px; font-weight: 600; color: var(--blue); padding-top: 7px; }
+    h2 { font-size: 25px; font-weight: 600; letter-spacing: -.2px; line-height: 1.25; }
+    .step p { margin-top: 13px; }
+    .step p + p { margin-top: 11px; }
+
+    .with-shot {
+        display: grid; grid-template-columns: 1fr auto;
+        gap: 28px; align-items: start; margin-top: 18px;
+    }
+    figure { margin: 0; }
+    figcaption {
+        font-family: var(--sans); font-size: 13px; color: var(--grey);
+        margin-top: 9px; max-width: 250px; line-height: 1.45;
+    }
+
+    .note {
+        margin-top: 20px; padding: 15px 18px;
+        background: var(--panel); border-left: 3px solid var(--blue);
+        border-radius: 0 8px 8px 0; font-size: 16.5px;
+    }
+    .note.warn { border-left-color: var(--red); }
+    .note b { font-weight: 600; }
+
+    .trouble { margin-top: 52px; padding-top: 34px; border-top: 1px solid var(--rule); }
+    .qa { margin-top: 22px; }
+    .qa h3 { font-family: var(--sans); font-size: 16px; font-weight: 600; margin-bottom: 5px; }
+    .qa p { color: var(--ink-soft); font-size: 17px; }
+
+    footer {
+        margin-top: 34px; padding-top: 22px; border-top: 1px solid var(--rule);
+        font-family: var(--sans); font-size: 13.5px; color: var(--grey);
+    }
+
+    svg { display: block; }
+
+    @media (max-width: 620px) {
+        body { font-size: 17px; padding: 0 18px 70px; }
+        h1 { font-size: 31px; }
+        h2 { font-size: 22px; }
+        .cover, .with-shot { grid-template-columns: 1fr; }
+        .cover { gap: 26px; padding-top: 20px; }
+        .step { grid-template-columns: 1fr; gap: 0; }
+        .num { padding-top: 0; margin-bottom: 6px; }
+        figcaption { max-width: none; }
+    }
+
+    @media print {
+        body { background: #fff; color: #000; padding: 0; font-size: 12pt; }
+        .step { page-break-inside: avoid; border-bottom: 1px solid #ddd; }
+        .note { background: #f6f6f6; }
+        .back { display: none; }
+    }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+    <a class="back" href="index.html">
+        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden="true">
+            <path d="M11 3L5 8.5l6 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Вернуться в приложение
+    </a>
+
+    <header class="cover">
+        <div>
+            <h1>Инвентаризация:<br>как вести учёт с телефона</h1>
+            <p>Фотографируете вещь, вписываете название и количество — запись сама уходит в общую таблицу. Инструкция займёт пять минут.</p>
+        </div>
+
+        <!-- главный экран -->
+        <svg width="216" height="430" viewBox="0 0 216 430" role="img" aria-label="Главный экран приложения">
+            <rect x="1" y="1" width="214" height="428" rx="30" fill="#1C1C1E" stroke="#3A3A3C" stroke-width="2"/>
+            <rect x="9" y="9" width="198" height="412" rx="24" fill="#000"/>
+            <rect x="83" y="14" width="50" height="13" rx="6.5" fill="#0A0A0A"/>
+
+            <rect x="20" y="40" width="83" height="38" rx="9" fill="#2C2C2E"/>
+            <text x="30" y="55" font-family="-apple-system, sans-serif" font-size="8" fill="#98989F">Оператор</text>
+            <text x="30" y="69" font-family="-apple-system, sans-serif" font-size="11" font-weight="600" fill="#FFF">Николай</text>
+            <rect x="113" y="40" width="83" height="38" rx="9" fill="#2C2C2E"/>
+            <text x="123" y="55" font-family="-apple-system, sans-serif" font-size="8" fill="#98989F">Склад</text>
+            <text x="123" y="69" font-family="-apple-system, sans-serif" font-size="11" font-weight="600" fill="#FFF">Ангар А</text>
+
+            <rect x="20" y="90" width="176" height="80" rx="10" fill="#1C1C1E"/>
+            <rect x="33" y="103" width="54" height="54" rx="8" fill="none" stroke="#5A5A5F" stroke-width="1.4" stroke-dasharray="4 3"/>
+            <path d="M60 118v24M48 130h24" stroke="#0A84FF" stroke-width="2" stroke-linecap="round"/>
+            <rect x="97" y="103" width="54" height="54" rx="8" fill="none" stroke="#5A5A5F" stroke-width="1.4" stroke-dasharray="4 3"/>
+            <path d="M124 118v24M112 130h24" stroke="#0A84FF" stroke-width="2" stroke-linecap="round"/>
+
+            <rect x="20" y="182" width="176" height="150" rx="10" fill="#1C1C1E"/>
+            <text x="33" y="204" font-family="-apple-system, sans-serif" font-size="10.5" fill="#FFF">Наименование</text>
+            <text x="183" y="204" text-anchor="end" font-family="-apple-system, sans-serif" font-size="10.5" fill="#5A5A5F">Обязательно</text>
+            <line x1="33" y1="216" x2="196" y2="216" stroke="#38383A"/>
+            <text x="33" y="236" font-family="-apple-system, sans-serif" font-size="10.5" fill="#FFF">Количество</text>
+            <text x="183" y="236" text-anchor="end" font-family="-apple-system, sans-serif" font-size="10.5" fill="#5A5A5F">0</text>
+            <line x1="33" y1="248" x2="196" y2="248" stroke="#38383A"/>
+
+            <text x="33" y="266" font-family="-apple-system, sans-serif" font-size="8" fill="#98989F">Состояние</text>
+            <rect x="33" y="272" width="163" height="20" rx="6" fill="#2C2C2E"/>
+            <rect x="35" y="274" width="52" height="16" rx="5" fill="#1C1C1E"/>
+            <text x="61" y="285" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="7.5" font-weight="600" fill="#FFF">Хорошее</text>
+            <text x="115" y="285" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="7.5" fill="#98989F">Дефекты</text>
+            <text x="170" y="285" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="7.5" fill="#98989F">Списание</text>
+
+            <text x="33" y="308" font-family="-apple-system, sans-serif" font-size="8" fill="#98989F">Работоспособность</text>
+            <rect x="33" y="314" width="163" height="20" rx="6" fill="#2C2C2E"/>
+            <rect x="35" y="316" width="52" height="16" rx="5" fill="#1C1C1E"/>
+            <text x="61" y="327" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="7.5" font-weight="600" fill="#FFF">Проверено</text>
+
+            <rect x="20" y="348" width="176" height="40" rx="11" fill="#0A84FF"/>
+            <text x="108" y="373" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="12.5" font-weight="600" fill="#fff">Добавить</text>
+        </svg>
+    </header>
+
+    <section class="step">
+        <div class="num">1</div>
+        <div>
+            <h2>Поставьте приложение на телефон</h2>
+            <p>Откройте присланную ссылку в Safari. Нажмите «Поделиться» внизу экрана, пролистайте список и выберите «На экран „Домой“».</p>
+            <p>Запускайте приложение только с этого значка: так оно открывается во весь экран, без адресной строки, которая иначе закрывает кнопку съёмки.</p>
+        </div>
+    </section>
+
+    <section class="step">
+        <div class="num">2</div>
+        <div>
+            <h2>Введите пароль, имя и склад</h2>
+            <p>При первом запуске приложение задаст три вопроса подряд: пароль доступа, ваше имя и склад. Пароль спросите у ответственного за таблицу.</p>
+            <p>Больше их вводить не придётся — телефон запомнит. Имя и склад видны вверху экрана, нажатие на плитку меняет значение.</p>
+
+            <p>Нажатие на плитку «Склад» открывает отдельный экран. Сверху — пустая строка для нового склада, ниже список тех, что уже есть в таблице. Текущий отмечен галочкой.</p>
+            <p>Обычно нужно просто нажать на строку с нужным складом — экран закроется сам.</p>
+
+            <div class="note">
+                <b>Каждый склад — отдельный лист в таблице.</b> Сменили склад в шапке — записи пойдут на другой лист.
+            </div>
+
+            <div class="note warn">
+                <b>Поле «Название нового склада» — только для действительно нового.</b> Оно заводит новый лист в таблице. Если склад есть в списке ниже, выбирайте его оттуда: иначе рядом появится второй лист с почти таким же названием, и записи разъедутся по двум местам.
+            </div>
+        </div>
+    </section>
+
+    <section class="step">
+        <div class="num">3</div>
+        <div>
+            <h2>Сфотографируйте вещь</h2>
+
+            <div class="with-shot">
+                <div>
+                    <p>Нажмите на квадратик с плюсом — сразу откроется камера. Белый круг делает снимок.</p>
+                    <p>После первого кадра камера остаётся открытой, снимок появляется в углу. Сделайте второй — например, бирку или маркировку — и камера закроется сама.</p>
+                    <p>Хватит одного фото? Нажмите крестик слева. Значок справа открывает галерею.</p>
+                </div>
+
+                <figure>
+                    <svg width="196" height="390" viewBox="0 0 196 390" role="img" aria-label="Экран камеры">
+                        <rect x="1" y="1" width="194" height="388" rx="28" fill="#2A2A2C" stroke="#3A3A3C" stroke-width="2"/>
+                        <rect x="9" y="9" width="178" height="372" rx="22" fill="#48484A"/>
+                        <path d="M9 250h178v131H9z" fill="#3E3E40"/>
+                        <rect x="46" y="150" width="104" height="72" rx="6" fill="#5A5A5C"/>
+                        <rect x="56" y="163" width="84" height="8" rx="4" fill="#6E6E70"/>
+                        <rect x="56" y="180" width="60" height="8" rx="4" fill="#6E6E70"/>
+
+                        <rect x="144" y="24" width="34" height="34" rx="6" fill="#8E8E93" stroke="#fff" stroke-width="1.6"/>
+                        <text x="98" y="290" text-anchor="middle" font-family="-apple-system, sans-serif" font-size="10" fill="#fff">Фото 2 из 2</text>
+
+                        <circle cx="42" cy="330" r="19" fill="#000" fill-opacity="0.38"/>
+                        <path d="M36 324l12 12M48 324l-12 12" stroke="#fff" stroke-width="2.1" stroke-linecap="round"/>
+
+                        <circle cx="98" cy="330" r="27" fill="none" stroke="#fff" stroke-width="3"/>
+                        <circle cx="98" cy="330" r="21" fill="#fff"/>
+
+                        <circle cx="154" cy="330" r="19" fill="#000" fill-opacity="0.38"/>
+                        <rect x="145" y="322" width="18" height="14" rx="2.6" fill="none" stroke="#fff" stroke-width="1.6"/>
+                        <path d="M146 333l4.4-4a1.6 1.6 0 012.2 0l3.6 3.3" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="150.5" cy="326.5" r="1.5" fill="#fff"/>
+                    </svg>
+                    <figcaption>Крестик — выйти, белый круг — снять, значок справа — выбрать готовое фото из галереи.</figcaption>
+                </figure>
+            </div>
+
+            <div class="note">
+                <b>Фото необязательны.</b> Если вещь очевидна, пропустите этот шаг и заполняйте поля.
+            </div>
+        </div>
+    </section>
+
+    <section class="step">
+        <div class="num">4</div>
+        <div>
+            <h2>Заполните карточку</h2>
+            <p>Название и количество обязательны. Примечание — на ваше усмотрение: туда удобно писать номер полки, чего не хватает, что сломано.</p>
+            <p>Ниже два ряда кнопок. <b>Состояние</b> — про внешний вид вещи: хорошее, есть дефекты, под списание. <b>Работоспособность</b> — про то, включали ли её: проверено, не работает, не проверить.</p>
+            <p>Оба ряда необязательны, но ответственный может сделать их обязательными в настройках. Повторное нажатие на выбранный вариант снимает выбор.</p>
+            <p>Нажмите «Добавить» — запись появится в списке внизу и уйдёт в таблицу вместе с фотографиями. Ждать не нужно, сразу вносите следующую вещь.</p>
+
+            <div class="note">
+                <b>Не тянитесь к кнопке из-под клавиатуры.</b> После названия нажмите «Далее», после количества — «Готово», и запись добавится сама.
+            </div>
+        </div>
+    </section>
+
+    <section class="step">
+        <div class="num">5</div>
+        <div>
+            <h2>Исправьте, если ошиблись</h2>
+
+            <div class="with-shot">
+                <div>
+                    <p>У каждой записи в списке две кнопки справа. Синий карандаш поднимает её обратно в форму: меняете что нужно и нажимаете «Сохранить». Красная корзина удаляет.</p>
+                    <p>Правки уходят в таблицу сразу — строка там меняется или исчезает.</p>
+                </div>
+
+                <figure>
+                    <svg width="250" height="98" viewBox="0 0 250 98" role="img" aria-label="Запись в списке">
+                        <rect x="1" y="1" width="248" height="76" rx="11" fill="#1C1C1E" stroke="#38383A"/>
+                        <rect x="14" y="17" width="44" height="44" rx="7" fill="#3A3A3C"/>
+                        <rect x="62" y="17" width="44" height="44" rx="7" fill="#2C2C2E"/>
+                        <text x="118" y="35" font-family="-apple-system, sans-serif" font-size="13" font-weight="600" fill="#FFF">Стул венский</text>
+                        <text x="118" y="52" font-family="-apple-system, sans-serif" font-size="11" fill="#98989F">12 шт · Ангар А</text>
+
+                        <rect x="182" y="17" width="26" height="26" rx="7" fill="#2C2C2E"/>
+                        <path d="M191 34.5l7.5-7.5 2.2 2.2-7.5 7.5h-2.2v-2.2z" fill="none" stroke="#0A84FF" stroke-width="1.4" stroke-linejoin="round"/>
+
+                        <rect x="212" y="17" width="26" height="26" rx="7" fill="#2C2C2E"/>
+                        <path d="M219 25h12M223 25v-1.6h4V25M220.5 25l.7 9.4h7.6l.7-9.4"
+                              fill="none" stroke="#FF453A" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <figcaption>Карандаш — изменить, корзина — удалить вместе со строкой в таблице.</figcaption>
+                </figure>
+            </div>
+        </div>
+    </section>
+
+    <section class="step">
+        <div class="num">6</div>
+        <div>
+            <h2>Список хранит последние записи</h2>
+            <p>Всё внесённое лежит в Google Таблице — там ничего не пропадает. На экране телефона остаются только последние тридцать позиций, чтобы приложение не переполнило память и не начало тормозить.</p>
+            <p>Когда появляется тридцать первая, самая старая уходит с экрана, но в таблице остаётся. Кнопка «Очистить список» в настройках убирает записи с телефона — на таблицу это не влияет.</p>
+        </div>
+    </section>
+
+    <section class="step">
+        <div class="num">7</div>
+        <div>
+            <h2>Настройки — для ответственного</h2>
+            <p>Шестерёнка в правом нижнем углу. При нажатии приложение спросит <b>пароль администратора</b> — он отличается от рабочего пароля, который вы вводили при первом запуске.</p>
+            <p>Если пароля у вас нет, это нормально: оператору настройки не нужны. Склад меняется плиткой в шапке, а тема — единственное, что там могло бы пригодиться.</p>
+
+            <div class="note">
+                <b>Что внутри.</b> Раздел «Подключение» — ссылка на скрипт и пароли; ссылку меняют после каждого нового развёртывания, переустанавливать приложение не нужно. «Заполнение» — можно сделать состояние и работоспособность обязательными, выбрать качество фото и отклик при сохранении. «Материалы» — ссылка на таблицу и эта инструкция.
+            </div>
+
+            <div class="note warn">
+                <b>«Полный сброс» стирает всё с телефона:</b> список, имя, склад и пароль. В таблице записи останутся, но вводить настройки придётся заново.
+            </div>
+        </div>
+    </section>
+
+    <section class="trouble">
+        <h2>Если что-то пошло не так</h2>
+
+        <div class="qa">
+            <h3>Пароль не подошёл</h3>
+            <p>Приложение скажет об этом и спросит заново. Уточните рабочий пароль у ответственного — вводится он один раз на телефон.</p>
+        </div>
+
+        <div class="qa">
+            <h3>Настройки не открываются</h3>
+            <p>Они закрыты паролем администратора, и он не совпадает с рабочим. Если вам нужно поменять что-то в настройках, обратитесь к ответственному за таблицу.</p>
+        </div>
+
+        <div class="qa">
+            <h3>Камера не открывается</h3>
+            <p>Телефон спрашивает разрешение при первом запуске. Если тогда отказались, откройте Настройки → Safari → Камера и разрешите доступ.</p>
+        </div>
+
+        <div class="qa">
+            <h3>Запись не появилась в таблице</h3>
+            <p>Скорее всего пропал интернет. Проверьте связь, затем нажмите на записи карандаш и сразу «Сохранить» — она отправится заново.</p>
+        </div>
+
+        <div class="qa">
+            <h3>Нужного склада нет в списке</h3>
+            <p>Список берётся из листов таблицы. Если склад заводится впервые, впишите название в верхнюю строку. Если склад точно существует, а в списке его нет, внизу экрана будет написано «Нет связи» — приложение показывает состав с прошлого раза. Подключитесь к сети и откройте выбор заново.</p>
+        </div>
+
+        <div class="qa">
+            <h3>Запись ушла не на тот лист</h3>
+            <p>Значит, в шапке был указан другой склад. Исправьте склад в записи через карандаш — строка сама переедет на нужный лист.</p>
+        </div>
+
+        <div class="qa">
+            <h3>Список пустой, хотя вчера вносили</h3>
+            <p>Записи привязаны к браузеру. Они пропадают, если очистить данные Safari или открыть приложение по другой ссылке. В таблице всё на месте.</p>
+        </div>
+
+        <div class="qa">
+            <h3>Кнопка съёмки закрыта панелью браузера</h3>
+            <p>Значит, приложение открыто в Safari, а не с домашнего экрана. Добавьте значок по шагу 1 и запускайте с него.</p>
+        </div>
+    </section>
+
+    <a class="back back-bottom" href="index.html">
+        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden="true">
+            <path d="M11 3L5 8.5l6 5.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Вернуться в приложение
+    </a>
+
+    <footer>
+        Инструкция к приложению «Инвентаризация». Вопросы — ответственному за таблицу.
+    </footer>
+
+</div>
+</body>
+</html>
